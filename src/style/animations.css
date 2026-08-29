@@ -1,0 +1,48 @@
+/* src/style/animations.css — LoopOS motion */
+
+@keyframes window-open {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.os-window {
+  animation: window-open 0.15s ease-out;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.dock-item {
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.window-control {
+  transition: filter 0.1s ease;
+}
+
+.window-control:hover {
+  filter: brightness(1.15);
+}
+
+.desktop-icon {
+  transition: background 0.1s ease, border-color 0.1s ease;
+}
+
+@keyframes notification-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.os-notification {
+  animation: notification-in 0.18s ease-out;
+}
