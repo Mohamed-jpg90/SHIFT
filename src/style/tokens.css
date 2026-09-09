@@ -1,0 +1,13 @@
+:root {
+  --los-bg: #07111f;
+  --los-surface: #101c2d;
+  --los-surface-elevated: #17263a;
+  --los-border: rgba(255, 255, 255, 0.12);
+  --los-text: #edf4ff;
+  --los-text-muted: #8ea2bd;
+  --los-accent: #58a6ff;
+  --los-danger: #ff5f57;
+  --los-success: #35d07f;
+  --los-radius: 12px;
+  --los-warning: #f2b429;
+}

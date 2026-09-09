@@ -60,9 +60,12 @@ const getCascadePosition = (openCount, size) => {
   const baseX = Math.max(0, (viewportWidth - size.width) / 2);
   const baseY = Math.max(0, (viewportHeight - size.height) / 2);
 
+  const rawX = baseX + step * CASCADE_OFFSET - (CASCADE_LIMIT * CASCADE_OFFSET) / 2;
+  const rawY = baseY + step * CASCADE_OFFSET - (CASCADE_LIMIT * CASCADE_OFFSET) / 2;
+
   return {
-    x: baseX + step * CASCADE_OFFSET - (CASCADE_LIMIT * CASCADE_OFFSET) / 2,
-    y: baseY + step * CASCADE_OFFSET - (CASCADE_LIMIT * CASCADE_OFFSET) / 2,
+    x: Math.min(Math.max(rawX, 0), Math.max(0, viewportWidth - size.width)),
+    y: Math.min(Math.max(rawY, 24), Math.max(24, viewportHeight - size.height)),
   };
 };
 

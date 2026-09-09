@@ -1,7 +1,12 @@
-import DesktopShell from "./components/shell/DesktopShell";
+import { BrowserRouter } from 'react-router-dom';
+import AppRoutes from './routes/AppRoutes';
 
 function App() {
-  return <DesktopShell />;
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
+  );
 }
 
 export default App;
