@@ -6,10 +6,6 @@
  * ask AppRenderer to render one. Add an app here once its component
  * exists — nothing else needs to change.
  */
-
-import { APP_IDS } from '../../data/desktopApps';
-import AppIcon from './AppIcon';
-
 import Browser from '../apps/Browser/Browser';
 import Calendar from '../apps/Calendar/Calendar';
 import Files from '../apps/Files/Files';
@@ -18,6 +14,9 @@ import MailLoop from '../apps/MailLoop/MailLoop';
 import WhatsUpp from '../apps/WhatsUpp/WhatsUpp';
 import Settings from '../apps/Settings/Settings';
 import Terminal from '../apps/Terminal/Terminal';
+import SideTask from '../apps/SideTask/SideTask';
+import { APP_IDS } from '../../data/desktopApps';
+import AppIcon from './AppIcon';
 
 const APP_COMPONENTS = {
   [APP_IDS.BROWSER]: Browser,
@@ -28,6 +27,7 @@ const APP_COMPONENTS = {
   [APP_IDS.WHATS_UPP]: WhatsUpp,
   [APP_IDS.SETTINGS]: Settings,
   [APP_IDS.TERMINAL]: Terminal,
+  [APP_IDS.SIDE_TASK]: SideTask,
 };
 
 function UnknownApp({ win }) {

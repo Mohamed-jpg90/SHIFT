@@ -433,4 +433,33 @@ export const useOsStore = create((set, get) => ({
   clearNotifications: () => {
     set({ notifications: [] });
   },
+
+    getSerializableState: () => {
+    const { windows, windowOrder, focusedWindowId } = get();
+    return {
+      open_windows: windowOrder.map((id) => windows[id]?.appId).filter(Boolean),
+      active_window: focusedWindowId ? windows[focusedWindowId]?.appId : null,
+      window_positions: Object.fromEntries(
+        windowOrder.map((id) => [
+          windows[id].appId,
+          { x: windows[id].position.x, y: windows[id].position.y, width: windows[id].size.width, height: windows[id].size.height },
+        ])
+      ),
+    };
+  },
+
+  restoreState: (desktopState) => {
+    if (!desktopState?.open_windows) return;
+    get().closeAllWindows();
+    desktopState.open_windows.forEach((appId) => {
+      const windowId = get().openWindow(appId);
+      const pos = desktopState.window_positions?.[appId];
+      if (windowId && pos) {
+        get().moveWindow(windowId, { x: pos.x, y: pos.y });
+        get().resizeWindow(windowId, { width: pos.width, height: pos.height });
+      }
+    });
+  },
+
+  
 }));

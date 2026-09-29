@@ -1,6 +1,7 @@
 import '../../style/utilities.css';
 import '../../style/animations.css';
 import '../../style/tokens.css';
+import { useAutoSave } from '../../hooks/useAutoSave';
 
 import DesktopBackground from './DesktopBackground';
 import DesktopIcons from './DesktopIcons';
@@ -12,6 +13,8 @@ import VideoCallModal from '../special/VideoCallModal';
 import ChoiceModal from '../story/ChoiceModal';
 
 export default function DesktopShell() {
+    useAutoSave();
+
   return (
     <div className="los-desktop">
       <DesktopBackground />

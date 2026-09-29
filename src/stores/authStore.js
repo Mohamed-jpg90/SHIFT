@@ -1,74 +1,106 @@
 import { create } from 'zustand';
+import * as authApi from '../api/authApi';
 
-const USERS_KEY = 'shift_users';
-const SESSION_KEY = 'shift_session';
+const STORAGE_KEY = 'shift_auth';
 
-const loadUsers = () => {
+const loadStoredSession = () => {
   try {
-    const raw = localStorage.getItem(USERS_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-};
-
-const saveUsers = (users) => {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-};
-
-const loadSession = () => {
-  try {
-    return localStorage.getItem(SESSION_KEY) || null;
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 };
 
+const persistSession = (session) => {
+  if (session) localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  else localStorage.removeItem(STORAGE_KEY);
+};
+
+const emptySession = {
+  userId: null,
+  fullName: null,
+  email: null,
+  accessToken: null,
+  refreshToken: null,
+  accessTokenExpiresAt: null,
+};
+
+const toSession = (data) => ({
+  userId: data.userId,
+  fullName: data.fullName,
+  email: data.email,
+  accessToken: data.accessToken,
+  refreshToken: data.refreshToken,
+  accessTokenExpiresAt: data.accessTokenExpiresAt,
+});
+
+const extractErrorMessage = (err) => {
+  const data = err?.response?.data;
+  if (!data) return err?.message || 'Network error — is the backend running on :5195?';
+  if (typeof data === 'string') return data;
+  if (data.errors) {
+    const firstKey = Object.keys(data.errors)[0];
+    return data.errors?.[firstKey]?.[0] ?? data.description ?? 'Validation failed.';
+  }
+  return data.description || data.title || 'Something went wrong.';
+};
+
 export const useAuthStore = create((set, get) => ({
-  currentUser: loadSession(),
+  ...emptySession,
+  isLoading: false,
   error: null,
 
-  isAuthenticated: () => Boolean(get().currentUser),
+  isAuthenticated: () => Boolean(get().accessToken),
 
-  signUp: (username, password) => {
-    const name = username.trim();
-    if (!name || !password) {
-      set({ error: 'Username and password are required.' });
-      return false;
-    }
-
-    const users = loadUsers();
-    if (users[name]) {
-      set({ error: 'That username is already taken.' });
-      return false;
-    }
-
-    users[name] = { password };
-    saveUsers(users);
-    localStorage.setItem(SESSION_KEY, name);
-    set({ currentUser: name, error: null });
-    return true;
+  setSession: (data) => {
+    const session = toSession(data);
+    persistSession(session);
+    set({ ...session, error: null });
   },
 
-  logIn: (username, password) => {
-    const name = username.trim();
-    const users = loadUsers();
-    const user = users[name];
-
-    if (!user || user.password !== password) {
-      set({ error: 'Invalid username or password.' });
-      return false;
-    }
-
-    localStorage.setItem(SESSION_KEY, name);
-    set({ currentUser: name, error: null });
-    return true;
+  clearSession: () => {
+    persistSession(null);
+    set({ ...emptySession, error: null });
   },
 
-  logOut: () => {
-    localStorage.removeItem(SESSION_KEY);
-    set({ currentUser: null, error: null });
+  signUp: async ({ userName, name, email, password, confirmPassword }) => {
+    set({ isLoading: true, error: null });
+    try {
+      const data = await authApi.register({ userName, name, email, password, confirmPassword });
+      get().setSession(data);
+      set({ isLoading: false });
+      return true;
+    } catch (err) {
+      set({ isLoading: false, error: extractErrorMessage(err) });
+      return false;
+    }
+  },
+
+  logIn: async (userName, password) => {
+    set({ isLoading: true, error: null });
+    try {
+      const data = await authApi.login({ userName, password });
+      get().setSession(data);
+      set({ isLoading: false });
+      return true;
+    } catch (err) {
+      set({ isLoading: false, error: extractErrorMessage(err) });
+      return false;
+    }
+  },
+
+  logOut: async () => {
+    const { refreshToken } = get();
+    get().clearSession();
+    if (refreshToken) authApi.logout(refreshToken).catch(() => {});
   },
 
   clearError: () => set({ error: null }),
 }));
+
+// Rehydrate session on load so a refresh doesn't kick the player to /
+const stored = loadStoredSession();
+if (stored?.accessToken) {
+  useAuthStore.setState(stored);
+}

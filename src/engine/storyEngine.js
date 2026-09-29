@@ -18,20 +18,25 @@ import { useOsStore } from '../stores/osStore';
 import { useStoryStore } from '../stores/storyStore';
 import { useWhatsUppStore } from '../stores/whatsUppStore';
 import { STORY_EVENT_TYPES as T } from '../data/scenarios/storyEventTypes';
-import { chapter1 } from '../data/scenarios/chapter1';
+// import { chapter1 } from '../data/scenarios/chapter1';
+import { useNarrativeStore } from '../stores/narrativeStore';
+import { useLoopCodeStore } from '../stores/loopCodeStore';
+import * as gameApi from '../api/gameApi';
 
-const CHAPTERS = {
-  1: chapter1,
-};
+import { getPortrait } from '../data/characters';
+
+// const CHAPTERS = {
+//   1: chapter1,
+// };
 
 const DEFAULT_WAIT_MS = 1000;
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export function getScenario(chapterId, scenarioId) {
-  const chapter = CHAPTERS[chapterId];
-  return chapter?.scenarios.find((s) => s.id === scenarioId) ?? null;
-}
+// export function getScenario(chapterId, scenarioId) {
+//   const chapter = CHAPTERS[chapterId];
+//   return chapter?.scenarios.find((s) => s.id === scenarioId) ?? null;
+// }
 
 /**
  * Executes a single event. Returns a promise that resolves once the
@@ -89,19 +94,30 @@ async function executeEvent(event) {
       break;
     }
 
-   case T.COMPLETE: {
+ case T.COMPLETE: {
+  const { playerId, shiftId } = useNarrativeStore.getState();
+  if (playerId && shiftId) {
+    gameApi.endShift(playerId, shiftId).catch((err) =>
+      console.warn('[storyEngine] endShift failed', err)
+    );
+  }
   useStoryStore.getState().completeCurrentScenario();
   return { completed: true };
 }
 
 
 
-    case T.VIDEO_CALL: {
+case T.VIDEO_CALL: {
   await useStoryStore.getState().startVideoCall({
     character: event.character,
+    portrait: getPortrait(event.character),
     mode: event.mode,
     message: event.message,
   });
+  break;
+}
+case T.LOOPCODE_VIEW: {
+  useLoopCodeStore.getState().showView(event.text, event.sender);
   break;
 }
 
@@ -143,22 +159,41 @@ case T.CODE_CHALLENGE: {
  * ChoiceModal callback or a successful code submission) instead of
  * plowing straight through. That's a Phase 5.5/5.6 concern.
  */
-export async function runScenario(chapterId, scenarioId) {
-  const scenario = getScenario(chapterId, scenarioId);
-  if (!scenario) {
-    console.warn(
-      `[storyEngine] Scenario ${chapterId}.${scenarioId} not found.`
-    );
+// export async function runScenario(chapterId, scenarioId) {
+//   const scenario = getScenario(chapterId, scenarioId);
+//   if (!scenario) {
+//     console.warn(
+//       `[storyEngine] Scenario ${chapterId}.${scenarioId} not found.`
+//     );
+//     return;
+//   }
+
+//   const { startScenario, setEventIndex } = useStoryStore.getState();
+//   startScenario(chapterId, scenarioId);
+
+//  for (let i = 0; i < scenario.events.length; i += 1) {
+//   setEventIndex(i);
+//   const result = await executeEvent(scenario.events[i]);
+//   if (result?.completed) break;
+//   if (result?.jumpTo !== undefined) i = result.jumpTo - 1;
+// }
+// }
+
+export async function runShift(playerId, shiftId) {
+  const ok = await useNarrativeStore.getState().loadShift(playerId, shiftId);
+  if (!ok) {
+    console.warn(`[storyEngine] Failed to load shift ${shiftId} for player ${playerId}`);
     return;
   }
 
+  const events = useNarrativeStore.getState().events;
   const { startScenario, setEventIndex } = useStoryStore.getState();
-  startScenario(chapterId, scenarioId);
+  startScenario(1, shiftId);
 
- for (let i = 0; i < scenario.events.length; i += 1) {
-  setEventIndex(i);
-  const result = await executeEvent(scenario.events[i]);
-  if (result?.completed) break;
-  if (result?.jumpTo !== undefined) i = result.jumpTo - 1;
-}
+  for (let i = 0; i < events.length; i += 1) {
+    setEventIndex(i);
+    const result = await executeEvent(events[i]);
+    if (result?.completed) break;
+    if (result?.jumpTo !== undefined) i = result.jumpTo - 1;
+  }
 }

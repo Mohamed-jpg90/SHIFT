@@ -19,6 +19,7 @@ export const APP_IDS = {
   WHATS_UPP: 'whatsUpp',
   SETTINGS: 'settings',
   TERMINAL: 'terminal',
+  SIDE_TASK: 'sideTask',
 };
 
 /**
@@ -123,7 +124,20 @@ export const desktopApps = {
     defaultPosition: 'center',
     resizable: true,
   },
+    [APP_IDS.SIDE_TASK]: {
+    id: APP_IDS.SIDE_TASK,
+    title: 'Side Quest',
+    icon: 'sideTask',
+    pinned: true,
+    singleton: true,
+    defaultSize: { width: 820, height: 600 },
+    minSize: { width: 460, height: 380 },
+    defaultPosition: 'center',
+    resizable: true,
+  },
 };
+
+
 
 export const getAppConfig = (appId) => desktopApps[appId] ?? null;
 

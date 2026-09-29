@@ -22,5 +22,6 @@ export const STORY_EVENT_TYPES = {
   VIDEO_CALL: 'VIDEO_CALL',
   CHOICE: 'CHOICE',
   CODE_CHALLENGE: 'CODE_CHALLENGE',
+  LOOPCODE_VIEW: 'LOOPCODE_VIEW', // new: read-only narrative content shown in LoopCode window
   COMPLETE: 'COMPLETE',
 };

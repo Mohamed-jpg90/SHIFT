@@ -5,7 +5,6 @@
  * actual glyph. Centralizing this means swapping the whole OS's icon
  * set later (e.g. for custom SVGs) only touches this one file.
  */
-
 import {
   FiGlobe,
   FiCalendar,
@@ -15,6 +14,7 @@ import {
   FiMessageCircle,
   FiSettings,
   FiTerminal,
+  FiZap,
   FiGrid,
 } from 'react-icons/fi';
 
@@ -27,6 +27,7 @@ const ICON_MAP = {
   whatsUpp: FiMessageCircle,
   settings: FiSettings,
   terminal: FiTerminal,
+  sideTask: FiZap,
 };
 
 export default function AppIcon({ icon, size = 22, className = '' }) {

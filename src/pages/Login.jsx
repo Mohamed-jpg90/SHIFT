@@ -9,12 +9,16 @@ export default function Login() {
   const logIn = useAuthStore((s) => s.logIn);
   const signUp = useAuthStore((s) => s.signUp);
   const error = useAuthStore((s) => s.error);
+  const isLoading = useAuthStore((s) => s.isLoading);
   const clearError = useAuthStore((s) => s.clearError);
 
   const [mode, setMode] = useState('login');
   const [username, setUsername] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [localError, setLocalError] = useState('');
   const [bootText, setBootText] = useState('');
   const [formReady, setFormReady] = useState(false);
 
@@ -34,25 +38,42 @@ export default function Login() {
   const handleSwitchMode = (nextMode) => {
     setMode(nextMode);
     clearError();
+    setLocalError('');
     setUsername('');
+    setName('');
+    setEmail('');
     setPassword('');
     setConfirmPassword('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLocalError('');
 
     if (mode === 'signup') {
-      if (password !== confirmPassword) {
-        useAuthStore.setState({ error: 'passwords do not match' });
+      const passwordRegex =
+        /^(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{10,}$/;
+
+      if (!passwordRegex.test(password)) {
+        setLocalError(
+          'Password must be at least 10 characters, contain one uppercase letter and one special character'
+        );
         return;
       }
-      if (signUp(username, password)) navigate('/game', { replace: true });
+      if (password !== confirmPassword) {
+        setLocalError('passwords do not match');
+        return;
+      }
+      const ok = await signUp({ userName: username, name, email, password, confirmPassword });
+      if (ok) navigate('/game', { replace: true });
       return;
     }
 
-    if (logIn(username, password)) navigate('/game', { replace: true });
+    const ok = await logIn(username, password);
+    if (ok) navigate('/game', { replace: true });
   };
+
+  const displayError = localError || error;
 
   return (
     <div className="term-page">
@@ -104,6 +125,32 @@ export default function Login() {
                   />
                 </label>
 
+                {mode === 'signup' && (
+                  <>
+                    <label className="term-field">
+                      <span className="term-prompt">&gt; full name</span>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        autoComplete="name"
+                        required
+                      />
+                    </label>
+
+                    <label className="term-field">
+                      <span className="term-prompt">&gt; email</span>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        autoComplete="email"
+                        required
+                      />
+                    </label>
+                  </>
+                )}
+
                 <label className="term-field">
                   <span className="term-prompt">&gt; password</span>
                   <input
@@ -111,6 +158,7 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                    minLength={mode === 'signup' ? 10 : undefined}
                     required
                   />
                 </label>
@@ -128,10 +176,10 @@ export default function Login() {
                   </label>
                 )}
 
-                {error && <p className="term-error">ERR: {error}</p>}
+                {displayError && <p className="term-error">ERR: {displayError}</p>}
 
-                <button type="submit" className="term-submit">
-                  {mode === 'login' ? 'authenticate' : 'create account'}
+                <button type="submit" className="term-submit" disabled={isLoading}>
+                  {isLoading ? 'connecting…' : mode === 'login' ? 'authenticate' : 'create account'}
                 </button>
               </form>
             </div>

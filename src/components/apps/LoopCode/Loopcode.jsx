@@ -1,19 +1,29 @@
 import { useMemo, useState } from 'react';
 import { useStoryStore } from '../../../stores/storyStore';
 import { playSound } from '../../../audio/soundManager';
+import { useLoopCodeStore } from '../../../stores/loopCodeStore';
 
 const norm = (s) => s.replace(/\s+/g, '').replace(/;/g, '');
 
 export default function LoopCode() {
   const challenge = useStoryStore((s) => s.activeCodeChallenge);
   const submitCodeChallenge = useStoryStore((s) => s.submitCodeChallenge);
+  const viewContent = useLoopCodeStore((s) => s.viewContent);
   const [code, setCode] = useState('');
   const [status, setStatus] = useState(null);
   const [checking, setChecking] = useState(false);
 
   const lineCount = useMemo(() => code.split('\n').length || 1, [code]);
 
-  if (!challenge) return <div className="app-placeholder">no active challenge</div>;
+  if (!challenge && viewContent) {
+    return (
+      <div className="loopcode">
+        <p className="app-header">&gt; {viewContent.sender ?? 'system'}</p>
+        <pre className="loopcode__textarea" style={{ whiteSpace: 'pre-wrap' }}>{viewContent.text}</pre>
+      </div>
+    );
+  }
+    if (!challenge) return <div className="app-placeholder">no active challenge</div>;
 
   const handleRun = () => {
     setChecking(true);

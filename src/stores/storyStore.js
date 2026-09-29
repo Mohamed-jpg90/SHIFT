@@ -19,6 +19,8 @@ export const useStoryStore = create((set, get) => ({
   isPlaying: false,
   completedScenarios: [], // array of "chapterId-scenarioId" keys
 
+  backgroundTheme: 'default',
+
   activeVideoCall: null,   // { character, mode, message, resolve }
   activeChoice: null,      // { prompt, options, resolve }
   activeCodeChallenge: null, // { challengeId, storyText, context, task, referenceSolution, resolve }
@@ -53,8 +55,7 @@ export const useStoryStore = create((set, get) => ({
     });
   },
 
-
-
+  setBackgroundTheme: (theme) => set({ backgroundTheme: theme }),
 
   startVideoCall: (data) => new Promise((resolve) => {
     set({ activeVideoCall: { ...data, resolve } });
@@ -82,9 +83,6 @@ export const useStoryStore = create((set, get) => ({
     set({ activeCodeChallenge: null });
   },
 
-
-
-
   isScenarioCompleted: (chapterId, scenarioId) =>
     get().completedScenarios.includes(scenarioKey(chapterId, scenarioId)),
 
@@ -96,9 +94,10 @@ export const useStoryStore = create((set, get) => ({
       currentEventIndex: 0,
       isPlaying: false,
       completedScenarios: [],
+      backgroundTheme: 'default',
       activeVideoCall: null,
       activeChoice: null,
       activeCodeChallenge: null,
       lastChoice: null,
     }),
-}));
+})); 
