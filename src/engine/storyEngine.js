@@ -21,7 +21,7 @@ import { STORY_EVENT_TYPES as T } from '../data/scenarios/storyEventTypes';
 // import { chapter1 } from '../data/scenarios/chapter1';
 import { useNarrativeStore } from '../stores/narrativeStore';
 import { useLoopCodeStore } from '../stores/loopCodeStore';
-import * as gameApi from '../api/gameApi';
+import { useMailStore } from '../stores/mailStore';
 
 import { getPortrait } from '../data/characters';
 
@@ -94,16 +94,22 @@ async function executeEvent(event) {
       break;
     }
 
- case T.COMPLETE: {
-  const { playerId, shiftId } = useNarrativeStore.getState();
-  if (playerId && shiftId) {
-    gameApi.endShift(playerId, shiftId).catch((err) =>
-      console.warn('[storyEngine] endShift failed', err)
-    );
-  }
-  useStoryStore.getState().completeCurrentScenario();
-  return { completed: true };
-}
+    case T.ADD_MAIL: {
+      useMailStore.getState().addEmail(event.mail);
+      break;
+    }
+
+    case T.COMPLETE: {
+      useNarrativeStore.getState().setNarrativeComplete(true);
+      const task = useNarrativeStore.getState().gateCleared ? null : await useNarrativeStore.getState().loadNextPracticeTask();
+      if (task) {
+        const challengePromise = useStoryStore.getState().startCodeChallenge({ task });
+        useOsStore.getState().openWindow('loopCode');
+        await challengePromise;
+      }
+      useStoryStore.getState().completeCurrentScenario();
+      return { completed: true };
+    }
 
 
 
@@ -131,13 +137,9 @@ case T.CHOICE: {
 }
 
 case T.CODE_CHALLENGE: {
-  const challengePromise = useStoryStore.getState().startCodeChallenge({
-    challengeId: event.challengeId,
-    storyText: event.storyText,
-    context: event.context,
-    task: event.task,
-    referenceSolution: event.referenceSolution,
-  });
+  const task = await useNarrativeStore.getState().loadNextPracticeTask();
+  if (!task) break;
+  const challengePromise = useStoryStore.getState().startCodeChallenge({ task });
   useOsStore.getState().openWindow(event.appId ?? 'loopCode');
   await challengePromise;
   break;
@@ -179,19 +181,20 @@ case T.CODE_CHALLENGE: {
 // }
 // }
 
-export async function runShift(playerId, shiftId) {
-  const ok = await useNarrativeStore.getState().loadShift(playerId, shiftId);
+export async function runShift(playerId) {
+  const ok = await useNarrativeStore.getState().loadShift(playerId);
   if (!ok) {
-    console.warn(`[storyEngine] Failed to load shift ${shiftId} for player ${playerId}`);
+    console.warn(`[storyEngine] Failed to load the current shift for player ${playerId}`);
     return;
   }
 
   const events = useNarrativeStore.getState().events;
   const { startScenario, setEventIndex } = useStoryStore.getState();
-  startScenario(1, shiftId);
+  startScenario(1, useNarrativeStore.getState().shiftId);
 
   for (let i = 0; i < events.length; i += 1) {
     setEventIndex(i);
+    if (events[i].beatId) useNarrativeStore.getState().setCheckpoint(events[i].beatId);
     const result = await executeEvent(events[i]);
     if (result?.completed) break;
     if (result?.jumpTo !== undefined) i = result.jumpTo - 1;

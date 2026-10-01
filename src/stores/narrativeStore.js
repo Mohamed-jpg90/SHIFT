@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { STORY_EVENT_TYPES as T } from '../data/scenarios/storyEventTypes';
 import * as gameApi from '../api/gameApi';
+import * as practiceApi from '../api/practiceApi';
 
 const APP_TO_WINDOW = { WhatsUpp: 'whatsUpp', MailLoop: 'mailLoop', LoopCode: 'loopCode' };
 
@@ -18,6 +19,7 @@ function beatToEvents(beat) {
       break;
     case 'MailLoop':
       events.push({ type: T.OPEN_APP, appId: APP_TO_WINDOW.MailLoop });
+      events.push({ type: T.ADD_MAIL, mail: { id: beat.beatId, from: beat.senderName, subject: content.subject ?? 'New message', preview: content.preview ?? content.text, body: content.body ?? content.text } });
       events.push({ type: T.NOTIFICATION, notification: { type: 'info', appId: 'mailLoop', title: beat.senderName ?? 'MailLoop', message: content.text } });
       break;
     case 'LoopCode':
@@ -63,26 +65,61 @@ function beatToEvents(beat) {
 
 function mapBeatsToEvents(beats) {
   const ordered = [...beats].sort((a, b) => (a.sequenceOrder ?? 0) - (b.sequenceOrder ?? 0));
-  return [...ordered.flatMap(beatToEvents), { type: T.COMPLETE }];
+  return [...ordered.flatMap((beat) => beatToEvents(beat).map((event) => ({ ...event, beatId: beat.beatId }))), { type: T.COMPLETE }];
 }
 
 export const useNarrativeStore = create((set, get) => ({
   playerId: null,
   shiftId: null,
+  currentBeatId: null,
+  shift: null,
+  gateCleared: false,
+  narrativeComplete: false,
+  practiceError: null,
   rawBeats: [],
   events: [],
   isLoading: false,
   error: null,
 
-  loadShift: async (playerId, shiftId) => {
+  loadShift: async (playerId) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await gameApi.startShift(playerId, shiftId);
+      const data = await gameApi.startShift(playerId);
       const beats = data.beats ?? [];
-      set({ playerId, shiftId, rawBeats: beats, events: mapBeatsToEvents(beats), isLoading: false });
+      set({ playerId, shiftId: data.shiftId, shift: data.shift ?? null, currentBeatId: beats[0]?.beatId ?? null, rawBeats: beats, events: mapBeatsToEvents(beats), gateCleared: false, narrativeComplete: false, practiceError: null, isLoading: false });
       return true;
     } catch (err) {
       set({ isLoading: false, error: err?.response?.data?.description ?? err.message });
+      return false;
+    }
+  },
+
+  setCheckpoint: (beatId) => set({ currentBeatId: beatId }),
+  setNarrativeComplete: (complete = true) => set({ narrativeComplete: complete }),
+  setGateCleared: (cleared = true) => set({ gateCleared: cleared }),
+
+  loadNextPracticeTask: async () => {
+    const { playerId, shiftId } = get();
+    if (!playerId || !shiftId) return null;
+    set({ practiceError: null });
+    try {
+      return await practiceApi.getNextPracticeTask(playerId, shiftId);
+    } catch (err) {
+      set({ practiceError: err?.response?.data?.description ?? err?.message ?? 'Could not load the next practice task.' });
+      return null;
+    }
+  },
+
+  endCurrentShift: async () => {
+    const { playerId, gateCleared } = get();
+    if (!playerId || !gateCleared) return false;
+    set({ isLoading: true, error: null });
+    try {
+      await gameApi.endShift(playerId);
+      set({ isLoading: false, rawBeats: [], events: [], currentBeatId: null, shift: null, shiftId: null, narrativeComplete: false, gateCleared: false });
+      return true;
+    } catch (err) {
+      set({ isLoading: false, error: err?.response?.data?.description ?? err?.message ?? 'Could not end this shift.' });
       return false;
     }
   },

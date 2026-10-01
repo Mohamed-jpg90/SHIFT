@@ -8,6 +8,8 @@ export default function Login() {
   const navigate = useNavigate();
   const logIn = useAuthStore((s) => s.logIn);
   const signUp = useAuthStore((s) => s.signUp);
+  const requestPasswordReset = useAuthStore((s) => s.requestPasswordReset);
+  const resetPassword = useAuthStore((s) => s.resetPassword);
   const error = useAuthStore((s) => s.error);
   const isLoading = useAuthStore((s) => s.isLoading);
   const clearError = useAuthStore((s) => s.clearError);
@@ -18,6 +20,8 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [resetSent, setResetSent] = useState(false);
   const [localError, setLocalError] = useState('');
   const [bootText, setBootText] = useState('');
   const [formReady, setFormReady] = useState(false);
@@ -44,6 +48,8 @@ export default function Login() {
     setEmail('');
     setPassword('');
     setConfirmPassword('');
+    setOtp('');
+    setResetSent(false);
   };
 
   const handleSubmit = async (e) => {
@@ -66,6 +72,25 @@ export default function Login() {
       }
       const ok = await signUp({ userName: username, name, email, password, confirmPassword });
       if (ok) navigate('/game', { replace: true });
+      return;
+    }
+
+    if (mode === 'forgot') {
+      const ok = await requestPasswordReset(email);
+      if (ok) {
+        setResetSent(true);
+        setMode('reset');
+      }
+      return;
+    }
+
+    if (mode === 'reset') {
+      if (password !== confirmPassword) {
+        setLocalError('passwords do not match');
+        return;
+      }
+      const ok = await resetPassword({ email, otp, newPassword: password, confirmPassword });
+      if (ok) handleSwitchMode('login');
       return;
     }
 
@@ -111,10 +136,11 @@ export default function Login() {
                 >
                   sign up
                 </button>
+                <button type="button" className={`term-tab${mode === 'forgot' || mode === 'reset' ? ' term-tab--active' : ''}`} onClick={() => handleSwitchMode('forgot')}>reset password</button>
               </div>
 
               <form className="term-form" onSubmit={handleSubmit}>
-                <label className="term-field">
+                {(mode === 'login' || mode === 'signup') && <label className="term-field">
                   <span className="term-prompt">&gt; username</span>
                   <input
                     type="text"
@@ -123,11 +149,11 @@ export default function Login() {
                     autoComplete="username"
                     required
                   />
-                </label>
+                </label>}
 
-                {mode === 'signup' && (
+                {(mode === 'signup' || mode === 'forgot' || mode === 'reset') && (
                   <>
-                    <label className="term-field">
+                    {mode === 'signup' && <label className="term-field">
                       <span className="term-prompt">&gt; full name</span>
                       <input
                         type="text"
@@ -136,7 +162,7 @@ export default function Login() {
                         autoComplete="name"
                         required
                       />
-                    </label>
+                    </label>}
 
                     <label className="term-field">
                       <span className="term-prompt">&gt; email</span>
@@ -151,7 +177,7 @@ export default function Login() {
                   </>
                 )}
 
-                <label className="term-field">
+                {(mode === 'login' || mode === 'signup' || mode === 'reset') && <label className="term-field">
                   <span className="term-prompt">&gt; password</span>
                   <input
                     type="password"
@@ -161,9 +187,16 @@ export default function Login() {
                     minLength={mode === 'signup' ? 10 : undefined}
                     required
                   />
-                </label>
+                </label>}
 
-                {mode === 'signup' && (
+                {mode === 'reset' && (
+                  <label className="term-field">
+                    <span className="term-prompt">&gt; verification code</span>
+                    <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} autoComplete="one-time-code" required />
+                  </label>
+                )}
+
+                {(mode === 'signup' || mode === 'reset') && (
                   <label className="term-field">
                     <span className="term-prompt">&gt; confirm password</span>
                     <input
@@ -178,8 +211,9 @@ export default function Login() {
 
                 {displayError && <p className="term-error">ERR: {displayError}</p>}
 
+                {resetSent && mode === 'reset' && <p className="term-boot-line">&gt; verification code sent — check your inbox</p>}
                 <button type="submit" className="term-submit" disabled={isLoading}>
-                  {isLoading ? 'connecting…' : mode === 'login' ? 'authenticate' : 'create account'}
+                  {isLoading ? 'connecting…' : mode === 'login' ? 'authenticate' : mode === 'signup' ? 'create account' : mode === 'forgot' ? 'send verification code' : 'reset password'}
                 </button>
               </form>
             </div>

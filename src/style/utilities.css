@@ -605,6 +605,23 @@
 .loopcode-status { margin: 0; font-size: 13px; }
 .loopcode-status--error { color: var(--los-danger); }
 .loopcode-status--success { color: var(--los-success); }
+.loopcode-status--warning { color: var(--los-warning); }
+.loopcode__meta { margin: 4px 0 0; color: var(--los-text-muted); font-size: 12px; }
+.loopcode__toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--los-text-muted); font-size: 11.5px; }
+.loopcode__toolbar button, .loopcode__assemble button { border: 1px solid var(--los-border); border-radius: 6px; background: var(--los-surface); color: var(--los-text); cursor: pointer; padding: 5px 8px; font: inherit; }
+.loopcode__toolbar button:disabled, .loopcode__assemble button:disabled { opacity: .55; cursor: default; }
+.loopcode__assemble { flex: 1; overflow: auto; display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.loopcode__assemble li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid var(--los-border); border-radius: 7px; background: #0b1622; cursor: grab; }
+.loopcode__assemble code { overflow: hidden; text-overflow: ellipsis; white-space: pre; color: #dbe9ff; font: 12.5px monospace; }
+.loopcode__assemble li > span { display: flex; gap: 4px; }
+.loopcode__assemble button { padding: 2px 6px; }
+.loopcode__results { display: grid; gap: 5px; max-height: 140px; overflow-y: auto; }
+.loopcode__test { display: grid; grid-template-columns: 42px 1fr minmax(100px, 2fr); gap: 8px; align-items: center; padding: 7px 9px; border: 1px solid var(--los-border); border-radius: 7px; font-size: 11.5px; }
+.loopcode__test--pass { border-color: rgba(53,208,127,.35); }
+.loopcode__test--fail { border-color: rgba(255,95,87,.35); }
+.loopcode__test--pass b { color: var(--los-success); }
+.loopcode__test--fail b { color: var(--los-danger); }
+.loopcode__test code { overflow: hidden; color: var(--los-text-muted); text-overflow: ellipsis; white-space: nowrap; }
 .loopcode__run {
   align-self: flex-start; background: var(--los-accent); border: none; border-radius: 8px;
   padding: 8px 18px; color: #06121f; font-weight: 600; cursor: pointer;

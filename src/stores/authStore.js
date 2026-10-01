@@ -90,6 +90,30 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  requestPasswordReset: async (email) => {
+    set({ isLoading: true, error: null });
+    try {
+      await authApi.forgotPassword(email);
+      set({ isLoading: false });
+      return true;
+    } catch (err) {
+      set({ isLoading: false, error: extractErrorMessage(err) });
+      return false;
+    }
+  },
+
+  resetPassword: async (payload) => {
+    set({ isLoading: true, error: null });
+    try {
+      await authApi.resetPassword(payload);
+      set({ isLoading: false });
+      return true;
+    } catch (err) {
+      set({ isLoading: false, error: extractErrorMessage(err) });
+      return false;
+    }
+  },
+
   logOut: async () => {
     const { refreshToken } = get();
     get().clearSession();
